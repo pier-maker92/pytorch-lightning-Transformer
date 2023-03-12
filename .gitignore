@@ -1,0 +1,9 @@
+lightning_logs/
+training_results/
+.ipynb_checkpoints/
+__pycache__/
+data/en-it.tmx
+train_example/.ipynb_checkpoints/
+train_example/lightning_logs/
+train_example/training_results/
+train_example/Train_Metrics/
