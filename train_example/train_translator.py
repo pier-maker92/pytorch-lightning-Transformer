@@ -45,6 +45,11 @@ class EnIt(Dataset):
 
         self.tokenizer_en = AutoTokenizer.from_pretrained("bert-base-cased")
         self.tokenizer_it = AutoTokenizer.from_pretrained("dbmdz/bert-base-italian-cased")
+
+        # training_corpus_en = self._get_training_corpus(corpus,'src')
+        # training_corpus_it = self._get_training_corpus(corpus,'tgt')
+        # self.tokenizer_en = tokenizer_en.train_new_from_iterator(training_corpus_en, 1000)
+        # self.tokenizer_it = tokenizer_it.train_new_from_iterator(training_corpus_it, 1000)
         
         print('\ncompute tokens ids for src')
         src_tokens = [self.tokenizer_en(doc.source)['input_ids'] for doc in tqdm(corpus)]
@@ -66,6 +71,14 @@ class EnIt(Dataset):
         self.max_tgt_len = self.max_src_len = 512
         self.pad_tgt_value = self.tokenizer_it.pad_token_id
         self.pad_src_value = self.tokenizer_en.pad_token_id
+
+    def _get_training_corpus(self,corpus,kind ='src'):
+        for start_idx in range(0, len(corpus), 10):
+            if kind =='src':    
+                samples =[doc.source for doc in corpus[start_idx : start_idx + 10]]
+            else:
+                samples =[doc.target for doc in corpus[start_idx : start_idx + 10]]
+            yield samples
     
     def __len__(self):
         return len(self.corpus['src'])
@@ -109,7 +122,7 @@ parser.add_argument('-e','--epochs', default=100, type=int,
                     help="Numbers of epochs. Default = 100")
 parser.add_argument('-b','--batch_size', default=64, type=int,
                     help="Batch size. Default = 64")
-parser.add_argument('--lr', default=1e-4, type=float,
+parser.add_argument('--lr', default=2e-1, type=float,
                     help="Learning rate. Default = 2e-4")
 parser.add_argument('--n_gpus', default=1, type=int,
                     help="Number of gpus to use. -1 means all of them")
@@ -146,10 +159,11 @@ if __name__=="__main__":
                           tgt_seq_len, 
                           src_pad_token, 
                           tgt_pad_token, 
-                          n_layers=3, 
-                          n_heads=4, 
-                          d_ff=1024, 
-                          d_model=256, 
+                          tgt_tokenizer = training_data.tokenizer_it,
+                          n_layers=6, 
+                          n_heads=8, 
+                          d_ff=2048, 
+                          d_model=512, 
                           dropout=.1, 
                           lr=hparams['lr'])
 

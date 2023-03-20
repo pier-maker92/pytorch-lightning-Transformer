@@ -15,7 +15,7 @@ class DotProductAttention(nn.Module):
 
         # Apply mask to the attention scores
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, -1e9)
+            scores = scores.masked_fill(mask == 0, -1e20)
 
         # Computing the weights by a softmax operation
         weights = F.softmax(scores)

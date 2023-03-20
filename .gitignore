@@ -7,3 +7,6 @@ train_example/.ipynb_checkpoints/
 train_example/lightning_logs/
 train_example/training_results/
 train_example/Train_Metrics/
+train_example/last.pt
+.DS_Store
+test.ipynb

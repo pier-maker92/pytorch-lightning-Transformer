@@ -38,8 +38,7 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x):
-        x = x + self.pe[:, : x.size(1)].requires_grad_(False)
-        x = self.dropout(x)
+        x = x + self.pe[:, : x.size(1)]
         return x
     
 class Transformer(nn.Module):
@@ -69,13 +68,10 @@ class Transformer(nn.Module):
         self.tgt_pad_token = tgt_pad_token
 
     def forward(self, x_src, x_tgt):
-        # get pad token for src and tgt
-        src_pad_token, trg_pad_token = self.src_pad_token, self.tgt_pad_token
-
         # create masks
-        src_mask = self.make_pad_mask(x_src, x_src, src_pad_token, src_pad_token)
-        src_trg_mask = self.make_pad_mask(x_tgt, x_src, trg_pad_token, src_pad_token)
-        trg_mask = self.make_pad_mask(x_tgt, x_tgt, trg_pad_token, trg_pad_token) * self.lower_triangular_mask(x_tgt, x_tgt).to(x_tgt.device)
+        src_mask = self.make_src_mask(x_src)
+        #src_trg_mask = self.make_pad_mask(x_tgt, x_src, trg_pad_token, src_pad_token)
+        trg_mask = self.make_trg_mask(x_tgt)
 
         # Pick propers embeddings end encode position info
         x_src = self.positional_encoding['src'](self.embeddings['src'](x_src))
@@ -84,20 +80,20 @@ class Transformer(nn.Module):
         # Feed the encoder
         x_src_encoded = self.encoder(x_src, src_mask)
         # Feed the decoder
-        output = self.decoder(x_src_encoded, x_tgt, trg_mask, src_trg_mask)
+        output = self.decoder(x_src_encoded, x_tgt, trg_mask, src_mask ) # src_trg_mask
 
         return output
     
-    def make_pad_mask(self, q, k, q_pad_idx, k_pad_idx):
-        len_q, len_k = q.size(1), k.size(1)
-        k = k.ne(k_pad_idx).unsqueeze(1).unsqueeze(2)
-        k = k.repeat(1, 1, len_q, 1)
-        q = q.ne(q_pad_idx).unsqueeze(1).unsqueeze(3)
-        q = q.repeat(1, 1, 1, len_k)
-        return k & q
+    def make_src_mask(self, src):
+        src_mask = (src != self.src_pad_token).unsqueeze(1).unsqueeze(2)
+        # (N, 1, 1, src_len)
+        return src_mask.to(src.device)
 
-    def lower_triangular_mask(self, q, k):
-        len_q, len_k = q.size(1), k.size(1)
-        return torch.tril(torch.ones(len_q, len_k)).type(torch.BoolTensor)
+    def make_trg_mask(self, trg):
+        N, trg_len = trg.shape
+        trg_mask = torch.tril(torch.ones((trg_len, trg_len))).expand(
+            N, 1, trg_len, trg_len
+        )
+        return trg_mask.to(trg.device)
     
 
